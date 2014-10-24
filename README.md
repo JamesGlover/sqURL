@@ -20,6 +20,7 @@ http://ascii.co.uk/art/squirrel
 
 sqURL helps avoid the need to manually type all the cruft needed when talking to the Sequencescape API.
 Usage:
+
     squrl (POST|GET) (local|production|staging_2|staging|next_release) <endpoint> ['<data>']
 
 #Set-up
