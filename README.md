@@ -27,7 +27,7 @@ Usage:
 The first time you run sqURL it will create .squrl in your home directory. You must correctly
 configure this file before you may use sqURL.
 
-* *API_KEY* ="Log in to sequencescape and click your usernamer in the top right hand corner"
+* *API_KEY* Your sequencescape api key
 * *LOCAL_APP_KEY* This can mostly be left as is. Specifies the X_SEQUENCESCAPE_CLIENT_ID when connecting locally
 * *PRODUCTION* Full url and port number for production environment
 * *STAGING* Full url and port number for staging environment
@@ -37,6 +37,11 @@ configure this file before you may use sqURL.
 * *LOCAL* Can mostly be left as "http://localhost:3000", Full url and port number for local development environment
 * *S2UAT* Full url and port number for s2_uat environment
 
-#Gotchas
+#Finding your api key
+- Log into Sequencescape
+- Click your username in the top right hand corner
+- Your API key will be present in the blue box towards the bottom of the screen
 
+#Gotchas
 Any json data will need to be enclosed in single quotes.
+You will connect to the API with user-level privileges, unless you are connecting to a local instance of Sequencescape. This means many actions, such as creating state changes, will be forbidden.
