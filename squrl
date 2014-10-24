@@ -1,0 +1,154 @@
+#!/bin/bash
+# A simple curl wrapper to avoid the need to keep adding all the cruft
+
+# DEFAULTS
+API_KEY="Log in to sequencescape and click your usernamer in the top right hand corner"
+API_PATH="/api/1/"
+LOCAL_APP_KEY='development'
+production="http://example.com:123"
+STAGING="http://dev.example.com:123"
+STAGING_2="http://dev.example.com:124"
+NEXT_RELEASE="http://dev.example.com:125"
+TRAINING="http://dev.example.com:126"
+LOCAL="http://localhost:3000"
+S2UAT="http://dev.example.com:127"
+
+# Config
+function configure() {
+  (cat <<CONFIGURE
+API_KEY="$API_KEY"
+LOCAL_APP_KEY='development'
+PRODUCTION="$PRODUCTION"
+STAGING="$STAGING"
+STAGING_2="$STAGING_2"
+NEXT_RELEASE="$NEXT_RELEASE"
+TRAINING="$TRAINING"
+LOCAL="$LOCAL"
+S2UAT="$S2UAT"
+CONFIGURE
+) >> $HOME/.squrl
+}
+
+if [[ -e $HOME/.squrl ]]
+  then
+    source $HOME/.squrl
+  else
+    configure
+    cat <<FIRSTRUN
+This is the first time you've run sqURL. You'll need to configure it.
+A config file is stored at $HOME/.squrl
+FIRSTRUN
+  exit 0
+fi
+
+ARGS="squrl (POST|GET) (local|production|staging_2|staging|next_release) <endpoint> ['<data>']"
+
+function help_text() {
+  # Because why the hell not
+  cat <<"HELPTEXT"
+sqURL - A Sequencescape Curl wrapper
+------------------------------------
+             __
+              \ `-.
+     __        )   \
+  .-'  `-._.--'    |
+ /               _/
+|    ___     __-'. .
+|   '   `---<___/|/|
+|     _          o  )
+|      \   /  ,     |
+\  `,   )  \  \-`-._|
+ `-/   /---'>_/_\
+ '-`-__`-. '"   "
+       ""
+Squirrel by Joshua Bell-
+http://ascii.co.uk/art/squirrel
+
+sqURL helps avoid the need to manually type all the cruft needed when talking to the Sequencescape API.
+Usage:
+HELPTEXT
+  echo $ARGS
+  exit 0
+}
+
+function request() {
+ # Lets get some friendly names
+ local request_type=$1; shift
+ local environment=$1; shift
+ local endpoint=$1; shift
+ local data=$@
+
+ validate_request_type "$request_type"
+ generate_url "$environment" "$endpoint"
+ validate_data "$data" $request_type
+ set_keys "$environment"
+ curl -X $request_type $URL -H 'Accept:application/json' -H 'Content-Type:application/json' $AUTH $DATA_STRING --noproxy sanger.ac.uk --noproxy localhost
+}
+
+function set_keys() {
+  if [ $1 = 'local' ]
+    then
+      AUTH="-H X_SEQUENCESCAPE_CLIENT_ID:$LOCAL_APP_KEY"
+      return 1
+    else
+      AUTH="-b api_key=$API_KEY"
+      return 1
+    fi
+}
+
+function validate_request_type() {
+  if [[ $1 =~ ^(GET|POST)$ ]]
+  then
+    return 1
+  else
+    invalid_arguments
+  fi
+}
+
+function validate_data() {
+  if [ $2 = 'GET' ]
+    then
+    DATA_STRING=""
+    return 1
+  fi
+  if [[ $1 =~ ^{(\"|[0-9]) ]]
+  then
+    DATA_STRING="-d $1"
+    return 1
+  else
+    echo "Data appears to be invalid."
+    echo "Data should be in JSON format and will need to be contained between single quotes."
+    invalid_arguments
+  fi
+}
+
+function generate_url() {
+if [[ $2 =~ \{ ]]
+  then echo "{ in endpoint. You might be trying to POST to root."
+  invalid_arguments
+fi
+case "$1" in
+  'production'   ) URL="$PRODUCTION$API_PATH$2";;
+  'next_release' ) URL="$NEXT_RELEASE$API_PATH$2";;
+  'staging'      ) URL="$STAGING$API_PATH$2";;
+  'staging_2'    ) URL="$STAGING_2$API_PATH$2";;
+  'training'     ) URL="$TRAINING$API_PATH$2";;
+  'local'        ) URL="$LOCAL$API_PATH$2";API_KEY="development";;
+  's2_uat'       ) URL="$S2UAT$API_PATH$2";;
+  *              ) echo "Unknown environment: $1"; invalid_arguments ;;
+esac
+}
+
+function invalid_arguments() {
+  echo "Invalid arguments, Usage:"
+  echo $ARGS
+  exit 85
+}
+
+if [ -n "$1" ]
+
+then
+  request $@
+else
+  help_text
+fi
